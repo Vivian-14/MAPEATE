@@ -1,4 +1,4 @@
-# MAPEATE# Mapeate - Landing Page
+# Mapeate - Landing Page
 
 Este repositorio contiene el código fuente de la landing page para la aplicación **Mapeate**. El proyecto está diseñado con un enfoque moderno, utilizando un tema oscuro, efectos de glassmorphism y animaciones sutiles para ofrecer una experiencia de usuario premium.
 
@@ -28,16 +28,16 @@ Mapeate/
 │   └── screenshots/      # Capturas de pantalla del proyecto
 ├── index.html            # Estructura HTML de la página
 ├── styles.css            # Estilos CSS
+├── .gitignore            # Archivos ignorados por git
 ├── Mapeate.apk           # Archivo de instalación de la app (Placeholder)
-├── README.md             # Documentación del proyecto
-└── .gitignore            # Archivos ignorados por git
+└── README.md             # Documentación del proyecto
 ```
 
-## Código Fuente
+## Código Fuente Completo
 
-A continuación se presenta el código completo del proyecto.
+A continuación se presenta el código completo de todos los archivos del proyecto.
 
-### `index.html`
+### 1. `index.html`
 
 ```html
 <!-- Definicion del tipo de documento HTML5 -->
@@ -300,7 +300,7 @@ A continuación se presenta el código completo del proyecto.
 </html>
 ```
 
-### `styles.css`
+### 2. `styles.css`
 
 ```css
 :root {
@@ -805,6 +805,1057 @@ footer {
 
     .hamburger {
         display: flex;
+    }
+}
+```
+
+### 3. `.gitignore`
+
+```gitignore
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Pruebas
+coverage/
+
+# Produccion
+build/
+dist/
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+```
+
+## Código de la Aplicación Android (UNIDAD2)
+
+### 4. `MainActivity.kt`
+
+```kotlin
+package mx.edu.utng.avht.unidad2
+
+// Importaciones necesarias para la interfaz de usuario y funcionalidad
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// Importaciones de iconos y navegacion
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavController
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
+
+// Biblioteca Coil para cargar imagenes
+import coil.compose.rememberAsyncImagePainter
+
+// Importaciones de ViewModels y Pantallas
+import mx.edu.utng.avht.unidad2.screens.MapaPrincipalScreen
+import mx.edu.utng.avht.unidad2.screens.NuevoContenidoScreen
+import mx.edu.utng.avht.unidad2.screens.UserProfileScreen
+import mx.edu.utng.avht.unidad2.viewmodel.LoginViewModel
+import mx.edu.utng.avht.unidad2.viewmodel.PerfilViewModel
+
+import java.io.File
+import java.io.FileOutputStream
+import java.util.*
+
+/**
+ * Actividad principal de la aplicacion.
+ * Configura la navegacion y el contenido inicial.
+ */
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppNavigation()
+        }
+    }
+}
+
+/**
+ * Definicion de las rutas de navegacion de la aplicacion.
+ */
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Principal : Screen("principal")
+    object MapaPrincipal : Screen("mapa_principal")
+    object Perfil : Screen("perfil")
+    object Comunidad : Screen("comunidad")
+    object Contenido : Screen("contenido/{lat}/{lng}") {
+        fun createRoute(lat: Double, lng: Double) = "contenido/$lat/$lng"
+    }
+    object Register : Screen("register_screen")
+}
+
+/**
+ * Configuracion del grafo de navegacion.
+ * Define que pantalla mostrar para cada ruta.
+ */
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Login.route
+    ) {
+        // Pantalla de Login
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Principal.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+
+        // Pantalla de Registro
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Pantalla Principal (Menu)
+        composable(Screen.Principal.route) {
+            PrincipalGto(
+                onExplorarRutas = {
+                    navController.navigate(Screen.MapaPrincipal.route)
+                },
+                onNavigateToPerfil = {
+                    navController.navigate(Screen.Perfil.route)
+                },
+                onNavigateToComunidad = {
+                    navController.navigate(Screen.Comunidad.route)
+                }
+            )
+        }
+
+        // Pantalla del Mapa Principal
+        composable(Screen.MapaPrincipal.route) {
+            mx.edu.utng.avht.unidad2.screens.MapaPrincipalScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToPerfil = { navController.navigate(Screen.Perfil.route) },
+                onNavigateToComunidad = { navController.navigate(Screen.Comunidad.route) },
+                onNavigateToContenido = { lat, lng ->
+                    navController.navigate(Screen.Contenido.createRoute(lat, lng))
+                }
+            )
+        }
+
+        // Pantalla para agregar Nuevo Contenido
+        composable(
+            route = Screen.Contenido.route,
+            arguments = listOf(
+                androidx.navigation.navArgument("lat") { type = androidx.navigation.NavType.FloatType },
+                androidx.navigation.navArgument("lng") { type = androidx.navigation.NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 0.0
+            val lng = backStackEntry.arguments?.getFloat("lng")?.toDouble() ?: 0.0
+            mx.edu.utng.avht.unidad2.screens.NuevoContenidoScreen(
+                lat = lat,
+                lng = lng,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Pantalla de Perfil de Usuario
+        composable(Screen.Perfil.route) {
+            PerfilUsuarioScreen(navController = navController)
+        }
+
+        // Pantalla de Feed de Comunidad
+        composable(Screen.Comunidad.route) {
+            FeedComunidadScreen(onNavigateBack = { navController.popBackStack() }, navController = navController)
+        }
+        
+        // Pantalla de Perfil de Otro Usuario
+        composable(
+            route = "user_profile/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            UserProfileScreen(
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
+}
+
+/**
+ * Pantalla de Inicio de Sesion.
+ */
+@Composable
+fun LoginScreen(
+    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onLoginSuccess: () -> Unit = {},
+    onNavigateToRegister: () -> Unit = {}
+) {
+    val state = viewModel.uiState.collectAsState().value
+
+    Scaffold(
+        containerColor = Color(0xFFD2D0A6) // color de fondo
+    ) { padding ->
+
+        if (state.isLoginSuccessful) {
+            LaunchedEffect(Unit) { onLoginSuccess() }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            Text("🔐", fontSize = 50.sp)
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                "Iniciar sesión",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Campo de Correo Electronico
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = { viewModel.onEmailChange(it) },
+                label = { Text("Correo electrónico") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Campo de Contraseña
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = { viewModel.onPasswordChange(it) },
+                label = { Text("Contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Boton de Iniciar Sesion
+            Button(
+                onClick = { viewModel.onLoginClick() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE4A691) // Color Salmon
+                )
+            ) {
+                Text("Iniciar sesión", color = Color.White)
+            }
+
+            // Mensaje de Error
+            state.errorMessage?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(it, color = Color.Red)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Boton para ir al Registro
+            TextButton(onClick = { onNavigateToRegister() }) {
+                Text("Crear cuenta", fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+/**
+ * Pantalla de Registro de Usuario.
+ */
+@Composable
+fun RegisterScreen(
+    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onBack: () -> Unit = {}
+) {
+    val state = viewModel.uiState.collectAsState().value
+
+    // Estado local para el nombre
+    var nombre by remember { mutableStateOf("") }
+
+    Scaffold(
+        containerColor = Color(0xFFF7EFD8) // Color Crema
+    ) { padding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { onBack() }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Text("📝", fontSize = 50.sp)
+            Text("Regístrate", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(Modifier.height(40.dp))
+
+            // Campo de Nombre
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre de usuario") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Campo de Correo
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = { viewModel.onEmailChange(it) },
+                label = { Text("Correo") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Campo de Contraseña
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = { viewModel.onPasswordChange(it) },
+                label = { Text("Contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Boton de Registro
+            Button(
+                onClick = {
+                    viewModel.onRegisterClick()   // Guardar en Firebase
+                    onBack()                      // Regresar al login
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE4A691) // Color Salmon
+                )
+            ) {
+                Text("Registrarme", color = Color.White)
+            }
+
+            state.errorMessage?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(it, color = Color.Red)
+            }
+        }
+    }
+}
+
+/**
+ * Pantalla Principal (Menu de Opciones).
+ */
+@Composable
+@Preview(showBackground = true, showSystemUi = true)
+fun PrincipalGto(
+    onExplorarRutas: () -> Unit = {},
+    onNavigateToPerfil: () -> Unit = {},
+    onNavigateToComunidad: () -> Unit = {}
+) {
+    val salmon = Color(0xFFE4A691)
+    val crema = Color(0xFFF7EFD8)
+    val verdeSuave = Color(0xFFC8C8A9)
+    val azulGris = Color(0xFF556270)
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        // Imagen de fondo
+        Image(
+            painter = painterResource(id = R.drawable.gto_bonito),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Contenido centrado
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp, vertical = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            // Titulo MAPEATE
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(verdeSuave.copy(alpha = 0.88f))
+                    .padding(horizontal = 28.dp, vertical = 14.dp)
+            ) {
+                Text(
+                    text = "🗺️ MAPEATE",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 32.sp,
+                    color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(50.dp))
+
+            // Botones de Navegacion
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = { onExplorarRutas() },
+                    colors = ButtonDefaults.buttonColors(containerColor = crema),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(70.dp)
+                ) {
+                    Text("📍 Explorar rutas", color = azulGris)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { onNavigateToComunidad() },
+                    colors = ButtonDefaults.buttonColors(containerColor = salmon),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(70.dp)
+                ) {
+                    Text("\uD83C\uDFD8\uFE0F Comunidad", color = azulGris)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { onNavigateToPerfil() },
+                    colors = ButtonDefaults.buttonColors(containerColor = azulGris),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(70.dp)
+                ) {
+                    Text("👤 Mi perfil", color = crema)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Pantalla de Detalle de Ruta (Ejemplo).
+ */
+@Composable
+@Preview(showBackground = true, showSystemUi = true)
+fun DetalleRuta() {
+    val salmon = Color(0xFFE4A691)
+    val crema = Color(0xFFF7EFD8)
+    val verdeSuave = Color(0xFFC8C8A9)
+    val azulGris = Color(0xFF556270)
+    val azulOscuro = Color(0xFF273142)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(crema)
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 20.dp)
+    ) {
+        // Encabezado
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(crema)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "←",
+                color = azulOscuro,
+                fontSize = 22.sp,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text(
+                text = "Detalle de Ruta",
+                color = azulOscuro,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Header imagen
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(salmon),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Imagen del lugar", color = azulOscuro, fontSize = 16.sp)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Título
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(azulOscuro, RoundedCornerShape(6.dp))
+                .padding(12.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text("Nombre del lugar", color = crema, fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Ubicación
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("📍", fontSize = 16.sp)
+            Spacer(modifier = Modifier.width(4.dp))
+            Box(
+                modifier = Modifier
+                    .background(verdeSuave, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
+            ) {
+                Text("Ubicación de la ruta", color = azulOscuro, fontSize = 14.sp)
+            }
+        }
+        // ... (resto de la implementacion de detalle de ruta)
+    }
+}
+
+/**
+ * Pantalla de Meme Local (Ejemplo).
+ */
+@Composable
+@Preview(showBackground = true)
+fun MemeLocalScreen() {
+    Scaffold(
+        topBar = { TopBarMemeLocal() },
+        containerColor = Color(0xFFD2D0A6)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Sección del meme o imagen
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Meme / Imagen", color = Color.Gray)
+                    Text("😂", fontSize = 50.sp)
+                }
+            }
+
+            // Sección inferior con información
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF3EBD2))
+                    .padding(16.dp)
+            ) {
+                // Autor
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8A38B))
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text("Nombre de usuario", fontWeight = FontWeight.Bold)
+                        Text("📍 Ciudad o ubicación", fontSize = 12.sp, color = Color.Gray)
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text("2h", color = Color.Gray, fontSize = 12.sp)
+                }
+                // ... (resto de la implementacion de meme local)
+            }
+        }
+    }
+}
+
+@Composable
+fun TopBarMemeLocal() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("←", fontSize = 22.sp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Meme Local", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    }
+}
+
+/**
+ * Pantalla de Perfil de Usuario.
+ * Permite ver y editar la informacion del perfil y ver las publicaciones del usuario.
+ */
+@Composable
+fun PerfilUsuarioScreen(
+    navController: NavController,
+    perfilViewModel: PerfilViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    // Obtenemos username, email y bio desde el ViewModel
+    val username by perfilViewModel.username.collectAsState()
+    val email by perfilViewModel.email.collectAsState()
+    val bio by perfilViewModel.bio.collectAsState()
+
+    // Estado local para el TextField editable
+    var bioText by remember { mutableStateOf("") }
+
+    // Sincronizamos bioText con el StateFlow cada vez que cambia
+    LaunchedEffect(bio) {
+        bioText = bio
+    }
+
+    Scaffold(
+        topBar = { TopBarPerfil(onNavigateBack = { navController.popBackStack() }) },
+        containerColor = Color(0xFFD2D0A6)
+    ) { padding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFD2D0A6))
+        ) {
+
+            // -------- CAJA PRINCIPAL DEL PERFIL ----------
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(16.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                    // FOTO - Selector de imagen
+                    val context = LocalContext.current
+                    val launcher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.GetContent()
+                    ) { uri: Uri? ->
+                        uri?.let {
+                            perfilViewModel.updateProfilePicture(it, context)
+                        }
+                    }
+                    
+                    val profilePic = perfilViewModel.profilePicture.collectAsState()
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8A38B))
+                            .clickable { launcher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (profilePic.value.isNotEmpty() && profilePic.value.startsWith("data:image")) {
+                            val base64String = profilePic.value.substringAfter("base64,")
+                            val imageBytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
+                            val bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                            
+                            if (bitmap != null) {
+                                Image(
+                                    painter = androidx.compose.ui.graphics.painter.BitmapPainter(bitmap.asImageBitmap()),
+                                    contentDescription = "Foto de perfil",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Text("👤", fontSize = 32.sp)
+                            }
+                        } else {
+                            Text("👤", fontSize = 32.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Nombre real / Loading
+                    if (username == "Cargando...") {
+                        CircularProgressIndicator()
+                    } else {
+                        Text(
+                            text = username,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+
+                        // Email debajo del nombre
+                        if (email.isNotBlank()) {
+                            Text(
+                                text = email,
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Campo editable de la descripción/bio
+                        OutlinedTextField(
+                            value = bioText,
+                            onValueChange = { bioText = it },
+                            label = { Text("Descripción") },
+                            singleLine = false,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Botón para guardar la descripción
+                        Button(
+                            onClick = { perfilViewModel.updateBio(bioText) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFC8C8A9),
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text("Guardar descripción")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Botón cerrar sesión
+                        Button(
+                            onClick = {
+                                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red
+                            )
+                        ) {
+                            Text("🚪 Cerrar sesión", color = Color.White)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
+
+            // -------- PUBLICACIONES DEL USUARIO --------
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF3EBD2))
+                    .padding(16.dp)
+            ) {
+                Text("Mis Publicaciones", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                var userPosts by remember { mutableStateOf<List<mx.edu.utng.avht.unidad2.data.ContentModel>>(emptyList()) }
+                val contentViewModel: mx.edu.utng.avht.unidad2.viewmodel.ContentViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                val currentUserId = auth.currentUser?.uid ?: ""
+
+                DisposableEffect(currentUserId) {
+                    if (currentUserId.isNotEmpty()) {
+                        contentViewModel.fetchUserPosts(currentUserId) { posts ->
+                            userPosts = posts
+                        }
+                    }
+                    onDispose { }
+                }
+
+                if (userPosts.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No tienes publicaciones aún", color = Color.Gray)
+                    }
+                } else {
+                    var selectedPost by remember { mutableStateOf<mx.edu.utng.avht.unidad2.data.ContentModel?>(null) }
+                    
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(userPosts) { post ->
+                            // ... (logica de renderizado de items de post)
+                            Box(
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFE8A38B))
+                                    .clickable { selectedPost = post },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // ... (imagen del post)
+                                Text("📷", fontSize = 28.sp)
+                            }
+                        }
+                    }
+                    
+                    // Dialog para mostrar publicación completa
+                    selectedPost?.let { post ->
+                        // ... (Dialogo de detalle de post)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBarPerfil(onNavigateBack: () -> Unit) {
+    TopAppBar(
+        title = { Text("Perfil") },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Atrás"
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFFD2D0A6),
+            titleContentColor = Color.Black,
+            navigationIconContentColor = Color.Black,
+            actionIconContentColor = Color.Black
+        )
+    )
+}
+
+/**
+ * Pantalla de Feed de Comunidad.
+ * Muestra las publicaciones de todos los usuarios.
+ */
+@Composable
+fun FeedComunidadScreen(
+    onNavigateBack: () -> Unit,
+    navController: NavController,
+    viewModel: mx.edu.utng.avht.unidad2.viewmodel.ContentViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val posts by viewModel.posts.collectAsState()
+
+    Scaffold(
+        topBar = { TopBarFeedComunidad(onNavigateBack = onNavigateBack) },
+        containerColor = Color(0xFFD2D0A6)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFD2D0A6))
+        ) {
+            TabsFeed()
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF3EBD2))
+            ) {
+                items(posts) { post ->
+                    FeedPostItem(
+                        post = post,
+                        viewModel = viewModel,
+                        onLikeClick = { viewModel.toggleLike(post) },
+                        onCommentSend = { text -> viewModel.addComment(post.id, text) },
+                        onUserClick = { userId ->
+                            navController.navigate("user_profile/$userId")
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+// ... (Resto de componentes auxiliares como FeedPostItem, TopBarFeedComunidad, etc.)
+```
+
+### 5. `Components.kt`
+
+```kotlin
+package mx.edu.utng.avht.unidad2
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// Definicion de colores globales para la aplicacion
+val salmon = Color(0xFFE4A691)
+val crema = Color(0xFFF7EFD8)
+val azulGris = Color(0xFF556270)
+val azulOscuro = Color(0xFF273142)
+
+/**
+ * Barra superior personalizada.
+ * Incluye un campo de busqueda simulado.
+ */
+@Composable
+fun TopBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(30.dp))
+            .background(Color.White),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Ícono de búsqueda
+        Text("🔍", modifier = Modifier.padding(start = 16.dp), fontSize = 18.sp, color = azulGris)
+        Text(
+            "Buscar lugar o meme...",
+            modifier = Modifier.padding(start = 8.dp, top = 16.dp, bottom = 16.dp),
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+/**
+ * Barra de navegacion inferior.
+ * Permite navegar entre Mapa, Comunidad y Perfil.
+ */
+@Composable
+fun BottomNav(
+    onNavigateToPerfil: () -> Unit = {},
+    onNavigateToComunidad: () -> Unit = {}
+) {
+    NavigationBar(containerColor = Color.White) {
+
+        // Item de Mapa
+        NavigationBarItem(
+            selected = true,
+            onClick = {},
+            icon = { Text("📍") },
+            label = { Text("Mapa") }
+        )
+
+        // Item de Comunidad
+        NavigationBarItem(
+            selected = false,
+            onClick = { onNavigateToComunidad() },
+            icon = { Text("👥") },
+            label = { Text("Comunidad") }
+        )
+
+        // Item de Perfil
+        NavigationBarItem(
+            selected = false,
+            onClick = { onNavigateToPerfil() },
+            icon = { Text("🏠") },
+            label = { Text("Perfil") }
+        )
     }
 }
 ```
