@@ -35,7 +35,7 @@ Mapeate/
 
 ## Código Fuente
 
-A continuación se presenta el código completo del proyecto, debidamente comentado en español.
+A continuación se presenta el código completo del proyecto.
 
 ### `index.html`
 
